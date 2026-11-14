@@ -118,16 +118,17 @@ for (const i of items) console.log(`  ${i.live ? "•" : "x"} ${i.name} → ${i.
 // Screenshot every live page (Playwright is installed in CI; skipped if absent).
 try {
   const { chromium } = await import("playwright");
-  const browser = await chromium.launch();
+  // Software WebGL keeps canvas-heavy pages from stalling the capture on CI.
+  const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   await mkdir("_site/shots", { recursive: true });
   for (const i of items.filter((x) => x.live)) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     try {
-      await page.goto(i.url, { waitUntil: "networkidle", timeout: 20000 }).catch(() => {});
-      await page.waitForTimeout(800);
-      const opts = { path: `_site/shots/${i.name}.jpg`, type: "jpeg", quality: 72, timeout: 10000 };
-      // Busy canvas/game pages can stall a normal capture; retry with animations frozen.
-      await page.screenshot(opts).catch(() => page.screenshot({ ...opts, animations: "disabled", caret: "hide" }));
+      await page.goto(i.url, { waitUntil: "load", timeout: 20000 }).catch(() => {});
+      await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+      await page.waitForTimeout(1500);
+      // Busy canvas/game pages can take a while to hand over a frame.
+      await page.screenshot({ path: `_site/shots/${i.name}.jpg`, type: "jpeg", quality: 72, timeout: 30000 });
       i.shot = `shots/${i.name}.jpg`;
     } catch (e) {
       console.warn(`  screenshot failed for ${i.name}: ${e.message}`);
