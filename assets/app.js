@@ -9,7 +9,14 @@ function ago(iso) {
 }
 const prettyName = (n) => n.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const shortUrl = (u) => u.replace(/^https?:\/\//, "").replace(/\/$/, "");
-const hue = (str) => { let h = 0; for (const c of str) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+const hash = (str) => { let h = 0; for (const c of str) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+// Placeholder art for pages without a screenshot, in the lava-lamp palette.
+const LAMP = [
+  "linear-gradient(160deg, #0a3cff, #2f7bff 45%, #9dff4a)",
+  "linear-gradient(200deg, #061a5c, #1f5fe0 55%, #b8ff7a)",
+  "radial-gradient(circle at 50% 110%, #e2ffb3, #9dff4a 30%, #2f7bff 75%, #0a2a8a)",
+  "linear-gradient(140deg, #9dff4a, #4fd06a 40%, #1f5fe0)",
+];
 
 /* ---------- theme ---------- */
 const root = document.documentElement;
@@ -82,7 +89,7 @@ function header(data) {
 
 function placeholder(thumb, page) {
   thumb.classList.add("fallback");
-  thumb.style.setProperty("--h", hue(page.name));
+  thumb.style.setProperty("--ph", LAMP[hash(page.name) % LAMP.length]);
   $(".shot", thumb).dataset.initial = titleOf(page)[0].toUpperCase();
 }
 
