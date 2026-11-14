@@ -208,3 +208,30 @@ kbd { font: 500 11px "JetBrains Mono", monospace; color: var(--faint); border: 1
 .url { font: 12px "JetBrains Mono", monospace; color: var(--accent-2); word-break: break-all; }
 .url:hover { text-decoration: underline; }
 .down { color: var(--accent-3); }
+
+/* ---------- other repos (no page) ---------- */
+.others { margin-top: 56px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); backdrop-filter: blur(14px); }
+.others summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+  font: 600 15px "Space Grotesk", sans-serif; user-select: none;
+}
+.others summary::-webkit-details-marker { display: none; }
+.others summary em { font: 400 13px Inter, sans-serif; font-style: normal; color: var(--faint); }
+.others summary:hover .chev { color: var(--text); }
+.chev { display: inline-block; font-size: 20px; line-height: 1; color: var(--muted); transition: transform .2s; }
+.others[open] .chev { transform: rotate(90deg); }
+.count { margin-left: auto; font: 500 12px "JetBrains Mono", monospace; color: var(--muted); padding: 2px 9px; border: 1px solid var(--border); border-radius: 999px; }
+.others-list { list-style: none; margin: 0; padding: 0 8px 8px; border-top: 1px solid var(--border); }
+.others-list a {
+  display: grid; grid-template-columns: minmax(140px, 220px) 1fr auto; gap: 16px; align-items: baseline;
+  padding: 10px 12px; border-radius: 10px; font-size: 14px; transition: background .15s;
+}
+.others-list a:hover { background: var(--surface-hi); }
+.others-list strong { font: 500 13px "JetBrains Mono", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.o-desc { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.o-meta { font-size: 12px; color: var(--faint); white-space: nowrap; }
+.o-empty { padding: 14px 12px; color: var(--faint); font-size: 14px; }
+@media (max-width: 640px) {
+  .others-list a { grid-template-columns: 1fr auto; }
+  .o-desc { grid-column: 1 / -1; grid-row: 2; white-space: normal; }
+}

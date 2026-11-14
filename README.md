@@ -8,6 +8,8 @@ A homepage that indexes every **GitHub Pages site** published from this account'
 - `scripts/build.mjs` asks the GitHub API which public repos have Pages enabled (skipping archived repos and this one), then visits each live page to grab its `<title>`, description and `og:image`, and takes a screenshot with Playwright.
 - The result lands in `_site/data/repos.json` + `_site/shots/`, and the page (`index.html` + `assets/`) renders it as a searchable gallery of sites. A repo's `homepage` field, if set, is used as the page URL (handy for custom domains).
 
+Public repos without Pages are listed in a collapsed "Other repos" section at the bottom.
+
 New Pages sites show up automatically on the next daily run (or trigger **Actions → Deploy to GitHub Pages → Run workflow**).
 
 ## One-time setup

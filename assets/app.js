@@ -41,6 +41,8 @@ async function liveFallback(owner) {
   const host = `${owner.toLowerCase()}.github.io`;
   return {
     owner, generated_at: new Date().toISOString(), profile: null,
+    others: repos.filter((r) => !r.private && !r.has_pages && !r.archived && r.name.toLowerCase() !== self)
+      .map((r) => ({ name: r.name, description: r.description, repo: r.html_url, language: r.language, fork: r.fork, pushed_at: r.pushed_at })),
     repos: repos.filter((r) => !r.private && r.has_pages && !r.archived && r.name.toLowerCase() !== self).map((r) => ({
       name: r.name, description: r.description, repo: r.html_url, live: true,
       url: r.homepage?.startsWith("http") ? r.homepage : r.name.toLowerCase() === host ? `https://${host}/` : `https://${host}/${r.name}/`,
@@ -84,6 +86,31 @@ function placeholder(thumb, page) {
   $(".shot", thumb).dataset.initial = titleOf(page)[0].toUpperCase();
 }
 
+function renderOthers(q) {
+  const others = state.data.others || [];
+  const box = $("#others");
+  box.hidden = others.length === 0;
+  if (!others.length) return;
+  const list = others.filter((r) => !q || [r.name, r.description, r.language].filter(Boolean).join(" ").toLowerCase().includes(q))
+    .sort(state.sort === "name" ? (a, b) => a.name.localeCompare(b.name) : (a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
+  $("#others-count").textContent = q ? `${list.length} / ${others.length}` : others.length;
+  if (q && list.length) box.open = true;
+  const ul = $("#others-list");
+  ul.innerHTML = "";
+  for (const r of list) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = r.repo; a.target = "_blank"; a.rel = "noopener";
+    const name = document.createElement("strong"); name.textContent = r.name;
+    const desc = document.createElement("span"); desc.className = "o-desc"; desc.textContent = r.description || "";
+    const meta = document.createElement("span"); meta.className = "o-meta";
+    meta.textContent = [r.fork ? "fork" : null, r.language, ago(r.pushed_at)].filter(Boolean).join(" · ");
+    a.append(name, desc, meta);
+    li.append(a); ul.append(li);
+  }
+  if (!list.length) ul.innerHTML = '<li class="o-empty">No matches here either.</li>';
+}
+
 function render() {
   const q = state.q.trim().toLowerCase();
   const pages = state.data.repos;
@@ -93,6 +120,7 @@ function render() {
     name: (a, b) => titleOf(a).localeCompare(titleOf(b)),
   };
   list = list.slice().sort(sorters[state.sort]);
+  renderOthers(q);
 
   grid.innerHTML = "";
   $("#empty").hidden = list.length > 0 || pages.length === 0;

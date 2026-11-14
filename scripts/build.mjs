@@ -42,9 +42,19 @@ async function pagesUrl(repo) {
     : `https://${host}/${repo.name}/`;
 }
 
-const repos = (await listRepos()).filter(
-  (r) => !r.private && r.has_pages && !r.archived && r.name.toLowerCase() !== SELF,
+const allRepos = (await listRepos()).filter(
+  (r) => !r.private && !r.archived && r.name.toLowerCase() !== SELF,
 );
+const repos = allRepos.filter((r) => r.has_pages);
+// Public repos without a Pages site, listed in a collapsed section at the bottom.
+const others = allRepos.filter((r) => !r.has_pages).map((r) => ({
+  name: r.name,
+  description: r.description,
+  repo: r.html_url,
+  language: r.language,
+  fork: r.fork,
+  pushed_at: r.pushed_at,
+})).sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
 
 // Pull the page's own <title>, description and og:image so each entry is
 // about the site itself rather than the repository behind it.
@@ -94,7 +104,7 @@ try {
   profile = { login: u.login, name: u.name, bio: u.bio, avatar: u.avatar_url, url: u.html_url, blog: u.blog };
 } catch { /* optional */ }
 
-const payload = { owner: OWNER, generated_at: new Date().toISOString(), profile, repos: items };
+const payload = { owner: OWNER, generated_at: new Date().toISOString(), profile, repos: items, others };
 
 await rm("_site", { recursive: true, force: true });
 await mkdir("_site/data", { recursive: true });
