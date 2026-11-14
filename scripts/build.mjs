@@ -125,7 +125,9 @@ try {
     try {
       await page.goto(i.url, { waitUntil: "networkidle", timeout: 20000 }).catch(() => {});
       await page.waitForTimeout(800);
-      await page.screenshot({ path: `_site/shots/${i.name}.jpg`, type: "jpeg", quality: 72 });
+      const opts = { path: `_site/shots/${i.name}.jpg`, type: "jpeg", quality: 72, timeout: 10000 };
+      // Busy canvas/game pages can stall a normal capture; retry with animations frozen.
+      await page.screenshot(opts).catch(() => page.screenshot({ ...opts, animations: "disabled", caret: "hide" }));
       i.shot = `shots/${i.name}.jpg`;
     } catch (e) {
       console.warn(`  screenshot failed for ${i.name}: ${e.message}`);
