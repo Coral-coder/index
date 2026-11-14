@@ -121,21 +121,32 @@ try {
   // Software WebGL keeps canvas-heavy pages from stalling the capture on CI.
   const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   await mkdir("_site/shots", { recursive: true });
-  for (const i of items.filter((x) => x.live)) {
+  const shoot = async (i) => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     try {
-      await page.goto(i.url, { waitUntil: "load", timeout: 20000 }).catch(() => {});
+      await page.goto(i.url, { waitUntil: "load", timeout: 30000 }).catch(() => {});
       await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
-      await page.waitForTimeout(1500);
-      // Busy canvas/game pages can take a while to hand over a frame.
-      await page.screenshot({ path: `_site/shots/${i.name}.jpg`, type: "jpeg", quality: 72, timeout: 30000 });
+      await page.waitForTimeout(2000);
+      // Games keep the main thread busy forever; stop their loops so a frame can be captured.
+      await Promise.race([
+        page.evaluate(() => {
+          window.requestAnimationFrame = () => 0;
+          for (let id = 1; id < 10000; id++) clearInterval(id);
+        }).catch(() => {}),
+        new Promise((r) => setTimeout(r, 45000)),
+      ]);
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: `_site/shots/${i.name}.jpg`, type: "jpeg", quality: 72, timeout: 45000 });
       i.shot = `shots/${i.name}.jpg`;
     } catch (e) {
-      console.warn(`  screenshot failed for ${i.name}: ${e.message}`);
+      console.warn(`  screenshot failed for ${i.name}: ${e.message.split("\n")[0]}`);
     } finally {
-      await page.close();
+      await page.close().catch(() => {});
     }
-  }
+  };
+  // A few at a time, so one slow page doesn't hold up the rest.
+  const queue = items.filter((x) => x.live);
+  await Promise.all(Array.from({ length: 4 }, async () => { while (queue.length) await shoot(queue.shift()); }));
   await browser.close();
   await writeFile("_site/data/repos.json", JSON.stringify(payload, null, 2));
   console.log(`Captured ${items.filter((x) => x.shot).length} screenshots.`);
