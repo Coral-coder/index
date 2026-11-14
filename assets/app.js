@@ -83,7 +83,7 @@ function renderSkeletons() {
 function header(data) {
   const p = data.profile;
   const owner = p?.login || data.owner;
-  document.title = `${p?.name || owner} · Projects`;
+  document.title = `${p?.name || owner} · Pet Projects`;
   $("#brand-name").textContent = owner;
   $("#gh-link").href = p?.url || `https://github.com/${owner}`;
   if (p?.avatar) { const a = $("#avatar"); a.src = p.avatar; a.hidden = false; }
@@ -93,7 +93,7 @@ function header(data) {
   $("#stat-langs").textContent = langs.size;
   const latest = data.repos.reduce((m, r) => (r.pushed_at > m ? r.pushed_at : m), "");
   $("#stat-updated").textContent = latest ? ago(latest) : "—";
-  $("#generated").textContent = `Index generated ${ago(data.generated_at)}`;
+  $("#generated").textContent = `Last refreshed ${ago(data.generated_at)}`;
 }
 
 function filtersUI(data) {
@@ -133,7 +133,7 @@ function render() {
   grid.innerHTML = "";
   $("#empty").hidden = list.length > 0 || state.data.repos.length === 0;
   if (state.data.repos.length === 0) {
-    grid.innerHTML = '<div class="error">No public repositories with GitHub Pages yet. Enable Pages on a repo and it will appear here on the next build.</div>';
+    grid.innerHTML = '<div class="error">Nothing here yet. Turn on Pages for a repo and it will show up on the next refresh.</div>';
     return;
   }
   list.forEach((r, i) => {
@@ -151,14 +151,14 @@ function render() {
     $(".name", node).title = r.name;
     $(".stars", node).textContent = r.stars ? `★ ${r.stars}` : "";
     const d = $(".desc", node);
-    if (r.description) d.textContent = r.description; else { d.textContent = "No description"; d.classList.add("none"); }
+    if (r.description) d.textContent = r.description; else { d.textContent = "Mystery project 🤷"; d.classList.add("none"); }
     const tl = $(".topics", node);
     (r.topics || []).slice(0, 4).forEach((t) => { const li = document.createElement("li"); li.textContent = t; tl.append(li); });
     if (!tl.children.length) tl.remove();
     const lang = $(".lang", node);
     if (r.language) { $("i", lang).style.background = colorFor(r.language); $("b", lang).textContent = r.language; } else lang.remove();
     const t = $("time", node);
-    t.dateTime = r.pushed_at; t.textContent = `Updated ${ago(r.pushed_at)}`;
+    t.dateTime = r.pushed_at; t.textContent = `Poked ${ago(r.pushed_at)}`;
     $(".src", node).href = r.repo;
     node.addEventListener("pointermove", (e) => {
       const b = node.getBoundingClientRect();

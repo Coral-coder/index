@@ -101,8 +101,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: inline-flex; align-items: center; gap: 8px; margin: 0 0 18px;
   font: 500 12px "JetBrains Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
 }
-.eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 4px rgba(52, 211, 153, .18); animation: pulse 2s infinite; }
-@keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); } }
+.eyebrow { text-transform: none; letter-spacing: 0; font-size: 13px; }
+.eyebrow::before { content: "❯"; color: var(--accent-3); }
 h1 {
   margin: 0; font: 700 clamp(42px, 7.5vw, 88px)/1.0 "Space Grotesk", sans-serif; letter-spacing: -.04em;
 }

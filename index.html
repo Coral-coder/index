@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Projects</title>
-  <meta name="description" content="An index of every live GitHub Pages project." />
+  <title>Pet Projects</title>
+  <meta name="description" content="A messy little shelf of pet projects and experiments." />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,13 +28,13 @@
 
     <div class="hero-inner">
       <img id="avatar" class="avatar" alt="" hidden />
-      <p class="eyebrow">Live on GitHub Pages</p>
-      <h1 id="title">Things I've <span class="grad">shipped</span>.</h1>
-      <p id="bio" class="lede">A living index of every public repository with a website. Updated automatically.</p>
+      <p class="eyebrow">~/pet-projects</p>
+      <h1 id="title">Pet projects &amp; <span class="grad">tinkering</span>.</h1>
+      <p id="bio" class="lede">Side quests, weekend experiments and things I built just to see if I could. Some are polished, most are not. Poke around.</p>
       <div class="stats">
-        <div><strong id="stat-sites">—</strong><span>sites</span></div>
+        <div><strong id="stat-sites">—</strong><span>projects</span></div>
         <div><strong id="stat-langs">—</strong><span>languages</span></div>
-        <div><strong id="stat-updated">—</strong><span>last update</span></div>
+        <div><strong id="stat-updated">—</strong><span>last tinkered</span></div>
       </div>
     </div>
   </header>
@@ -43,7 +43,7 @@
     <div class="controls">
       <label class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="q" type="search" placeholder="Search projects…" autocomplete="off" />
+        <input id="q" type="search" placeholder="Find something…" autocomplete="off" />
         <kbd>/</kbd>
       </label>
       <div class="sort" role="group" aria-label="Sort">
@@ -55,19 +55,19 @@
     <div id="filters" class="filters" role="group" aria-label="Filter by language"></div>
 
     <section id="grid" class="cards" aria-live="polite"></section>
-    <p id="empty" class="empty" hidden>No projects match that search.</p>
+    <p id="empty" class="empty" hidden>Nothing here by that name… yet.</p>
   </main>
 
   <footer class="foot">
     <span id="generated"></span>
-    <span>Built with GitHub Actions · Hosted on GitHub Pages</span>
+    <span>Made for fun · no warranties, no roadmap</span>
   </footer>
 
   <template id="card-tpl">
     <article class="card">
       <a class="thumb" target="_blank" rel="noopener">
         <img loading="lazy" alt="" />
-        <span class="visit">Visit site ↗</span>
+        <span class="visit">Take a look ↗</span>
       </a>
       <div class="body">
         <div class="row">
