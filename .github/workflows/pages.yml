@@ -26,7 +26,12 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build repo index
+      - name: Install Playwright (for page screenshots)
+        run: |
+          npm install --no-save --no-package-lock playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Build pages index
         run: node scripts/build.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

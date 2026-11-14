@@ -1,19 +1,5 @@
 const $ = (s, el = document) => el.querySelector(s);
 
-const LANG_COLORS = {
-  JavaScript: "#f1e05a", TypeScript: "#3178c6", HTML: "#e34c26", CSS: "#663399", SCSS: "#c6538c",
-  Python: "#3572A5", Rust: "#dea584", Go: "#00ADD8", Ruby: "#701516", Java: "#b07219", "C#": "#178600",
-  "C++": "#f34b7d", C: "#555555", Shell: "#89e051", Vue: "#41b883", Svelte: "#ff3e00", Astro: "#ff5a03",
-  Kotlin: "#A97BFF", Swift: "#F05138", Dart: "#00B4AB", PHP: "#4F5D95", Lua: "#000080", Elixir: "#6e4a7e",
-  "Jupyter Notebook": "#DA5B0B", MDX: "#fcb32c", Markdown: "#083fa1", GDScript: "#355570", Zig: "#ec915c",
-};
-const colorFor = (lang) => {
-  if (!lang) return "#8b8b9a";
-  if (LANG_COLORS[lang]) return LANG_COLORS[lang];
-  let h = 0; for (const c of lang) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return `hsl(${h} 65% 60%)`;
-};
-
 const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 function ago(iso) {
   const s = (new Date(iso) - Date.now()) / 1000;
@@ -22,6 +8,8 @@ function ago(iso) {
   return "just now";
 }
 const prettyName = (n) => n.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+const shortUrl = (u) => u.replace(/^https?:\/\//, "").replace(/\/$/, "");
+const hue = (str) => { let h = 0; for (const c of str) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
 
 /* ---------- theme ---------- */
 const root = document.documentElement;
@@ -41,7 +29,7 @@ function guessOwner() {
 }
 
 async function liveFallback(owner) {
-  // Used only when data/repos.json is unavailable (e.g. local preview).
+  // Only used when data/repos.json is missing (e.g. a local preview).
   const repos = [];
   for (let page = 1; page < 10; page++) {
     const r = await fetch(`https://api.github.com/users/${owner}/repos?per_page=100&page=${page}&sort=pushed`);
@@ -54,9 +42,9 @@ async function liveFallback(owner) {
   return {
     owner, generated_at: new Date().toISOString(), profile: null,
     repos: repos.filter((r) => !r.private && r.has_pages && !r.archived && r.name.toLowerCase() !== self).map((r) => ({
-      name: r.name, description: r.description, repo: r.html_url, homepage: r.homepage,
-      url: r.name.toLowerCase() === host ? `https://${host}/` : `https://${host}/${r.name}/`,
-      language: r.language, topics: r.topics || [], stars: r.stargazers_count, pushed_at: r.pushed_at,
+      name: r.name, description: r.description, repo: r.html_url, live: true,
+      url: r.homepage?.startsWith("http") ? r.homepage : r.name.toLowerCase() === host ? `https://${host}/` : `https://${host}/${r.name}/`,
+      pushed_at: r.pushed_at,
     })),
   };
 }
@@ -72,13 +60,10 @@ async function load() {
 }
 
 /* ---------- render ---------- */
-const state = { q: "", lang: null, sort: "pushed", data: null };
+const state = { q: "", sort: "pushed", data: null };
 const grid = $("#grid");
 const tpl = $("#card-tpl");
-
-function renderSkeletons() {
-  grid.innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton"></div>').join("");
-}
+const titleOf = (p) => p.title || prettyName(p.name);
 
 function header(data) {
   const p = data.profile;
@@ -87,79 +72,59 @@ function header(data) {
   $("#brand-name").textContent = owner;
   $("#gh-link").href = p?.url || `https://github.com/${owner}`;
   if (p?.avatar) { const a = $("#avatar"); a.src = p.avatar; a.hidden = false; }
-  if (p?.bio) $("#bio").textContent = p.bio;
-  const langs = new Set(data.repos.map((r) => r.language).filter(Boolean));
   $("#stat-sites").textContent = data.repos.length;
-  $("#stat-langs").textContent = langs.size;
   const latest = data.repos.reduce((m, r) => (r.pushed_at > m ? r.pushed_at : m), "");
   $("#stat-updated").textContent = latest ? ago(latest) : "—";
   $("#generated").textContent = `Last refreshed ${ago(data.generated_at)}`;
 }
 
-function filtersUI(data) {
-  const counts = {};
-  for (const r of data.repos) { const l = r.language || "Other"; counts[l] = (counts[l] || 0) + 1; }
-  const langs = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const el = $("#filters");
-  el.innerHTML = "";
-  if (langs.length < 2) return;
-  const mk = (label, value, n) => {
-    const b = document.createElement("button");
-    b.innerHTML = value ? `<i style="background:${colorFor(value === "Other" ? null : value)}"></i>` : "";
-    b.append(label);
-    if (n != null) { const s = document.createElement("span"); s.textContent = n; b.append(s); }
-    b.classList.toggle("active", state.lang === value);
-    b.onclick = () => { state.lang = state.lang === value ? null : value; filtersUI(data); render(); };
-    el.append(b);
-  };
-  mk("All", null, data.repos.length);
-  for (const [l, n] of langs) mk(l, l, n);
+function placeholder(thumb, page) {
+  thumb.classList.add("fallback");
+  thumb.style.setProperty("--h", hue(page.name));
+  $(".shot", thumb).dataset.initial = titleOf(page)[0].toUpperCase();
 }
 
 function render() {
   const q = state.q.trim().toLowerCase();
-  let list = state.data.repos.filter((r) => {
-    if (state.lang && (r.language || "Other") !== state.lang) return false;
-    if (!q) return true;
-    return [r.name, r.description, r.language, ...(r.topics || [])].filter(Boolean).join(" ").toLowerCase().includes(q);
-  });
+  const pages = state.data.repos;
+  let list = pages.filter((p) => !q || [p.title, p.name, p.description, p.url].filter(Boolean).join(" ").toLowerCase().includes(q));
   const sorters = {
     pushed: (a, b) => new Date(b.pushed_at) - new Date(a.pushed_at),
-    stars: (a, b) => b.stars - a.stars || new Date(b.pushed_at) - new Date(a.pushed_at),
-    name: (a, b) => a.name.localeCompare(b.name),
+    name: (a, b) => titleOf(a).localeCompare(titleOf(b)),
   };
   list = list.slice().sort(sorters[state.sort]);
 
   grid.innerHTML = "";
-  $("#empty").hidden = list.length > 0 || state.data.repos.length === 0;
-  if (state.data.repos.length === 0) {
-    grid.innerHTML = '<div class="error">Nothing here yet. Turn on Pages for a repo and it will show up on the next refresh.</div>';
+  $("#empty").hidden = list.length > 0 || pages.length === 0;
+  if (pages.length === 0) {
+    grid.innerHTML = '<div class="error">No pages yet. Turn on GitHub Pages for a repo and it will show up on the next refresh.</div>';
     return;
   }
-  list.forEach((r, i) => {
+  list.forEach((p, i) => {
     const node = tpl.content.firstElementChild.cloneNode(true);
     node.style.setProperty("--i", i);
-    const site = r.homepage && /^https?:\/\//.test(r.homepage) ? r.homepage : r.url;
     const thumb = $(".thumb", node);
-    thumb.href = site;
+    thumb.href = p.url;
+    $(".addr", thumb).textContent = shortUrl(p.url);
     const img = $("img", thumb);
-    img.alt = `${r.name} preview`;
-    img.onload = () => img.classList.add("loaded");
-    img.onerror = () => { img.remove(); thumb.classList.add("fallback"); thumb.dataset.initial = r.name[0].toUpperCase(); };
-    img.src = `https://opengraph.githubassets.com/${encodeURIComponent((r.pushed_at || "").slice(0, 10))}/${r.repo.split("/").slice(-2).join("/")}`;
-    $(".name", node).textContent = prettyName(r.name);
-    $(".name", node).title = r.name;
-    $(".stars", node).textContent = r.stars ? `★ ${r.stars}` : "";
+    const src = p.shot || p.image;
+    if (src) {
+      img.alt = `Screenshot of ${titleOf(p)}`;
+      img.onload = () => img.classList.add("loaded");
+      img.onerror = () => { img.remove(); placeholder(thumb, p); };
+      img.src = src;
+    } else { img.remove(); placeholder(thumb, p); }
+
+    const a = $(".name a", node);
+    a.href = p.url; a.textContent = titleOf(p);
+    const u = $(".url", node);
+    u.href = p.url; u.textContent = shortUrl(p.url);
     const d = $(".desc", node);
-    if (r.description) d.textContent = r.description; else { d.textContent = "Mystery project 🤷"; d.classList.add("none"); }
-    const tl = $(".topics", node);
-    (r.topics || []).slice(0, 4).forEach((t) => { const li = document.createElement("li"); li.textContent = t; tl.append(li); });
-    if (!tl.children.length) tl.remove();
-    const lang = $(".lang", node);
-    if (r.language) { $("i", lang).style.background = colorFor(r.language); $("b", lang).textContent = r.language; } else lang.remove();
+    if (p.description) d.textContent = p.description; else d.remove();
     const t = $("time", node);
-    t.dateTime = r.pushed_at; t.textContent = `Poked ${ago(r.pushed_at)}`;
-    $(".src", node).href = r.repo;
+    t.dateTime = p.pushed_at; t.textContent = `Poked ${ago(p.pushed_at)}`;
+    if (p.live === false) $(".down", node).hidden = false;
+    $(".src", node).href = p.repo;
     node.addEventListener("pointermove", (e) => {
       const b = node.getBoundingClientRect();
       node.style.setProperty("--mx", `${e.clientX - b.left}px`);
@@ -181,6 +146,6 @@ document.querySelectorAll(".sort button").forEach((b) => b.addEventListener("cli
   state.sort = b.dataset.sort; render();
 }));
 
-renderSkeletons();
-load().then((data) => { state.data = data; header(data); filtersUI(data); render(); })
+grid.innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton"></div>').join("");
+load().then((data) => { state.data = data; header(data); render(); })
   .catch((err) => { grid.innerHTML = `<div class="error">${err.message}</div>`; });

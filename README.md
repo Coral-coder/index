@@ -1,12 +1,12 @@
 # index
 
-A stylized homepage that lists every **public** repository of this account that has **GitHub Pages** enabled.
+A homepage that indexes every **GitHub Pages site** published from this account's public repos — pet projects, experiments, the lot.
 
 ## How it works
 
 - `.github/workflows/pages.yml` runs on every push to `main`, once a day, and on demand.
-- `scripts/build.mjs` (Node, no dependencies) asks the GitHub API for the owner's public repos, keeps the ones with Pages enabled (skipping archived repos and this one), and writes `data/repos.json` into `_site/` next to the static page.
-- The page (`index.html` + `assets/`) reads that JSON and renders searchable, filterable cards with live-site and source links.
+- `scripts/build.mjs` asks the GitHub API which public repos have Pages enabled (skipping archived repos and this one), then visits each live page to grab its `<title>`, description and `og:image`, and takes a screenshot with Playwright.
+- The result lands in `_site/data/repos.json` + `_site/shots/`, and the page (`index.html` + `assets/`) renders it as a searchable gallery of sites. A repo's `homepage` field, if set, is used as the page URL (handy for custom domains).
 
 New Pages sites show up automatically on the next daily run (or trigger **Actions → Deploy to GitHub Pages → Run workflow**).
 
